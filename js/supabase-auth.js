@@ -37,15 +37,15 @@ function mount(){
   if(!email||password.length<6){status.textContent='ایمیل و رمز حداقل ۶ نویسه‌ای وارد کن.';return}
   status.textContent='در حال اتصال...';
   try{const r=mode==='up'?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});
-   if(r.error)throw r.error;user=r.data.user;ui();
-   if(!r.data.session){status.textContent='ثبت‌نام انجام شد؛ اگر تأیید ایمیل فعال است، ایمیلت را بررسی کن و سپس وارد شو.';return}
-   await sync(true);
+   if(r.error)throw r.error;
+   if(!r.data.session){user=null;ui();status.textContent=mode==='up'?'ثبت‌نام انجام شد؛ اگر تأیید ایمیل فعال است، ایمیلت را بررسی کن و سپس وارد شو.':'نشست فعالی ایجاد نشد؛ اگر تأیید ایمیل لازم است، ایمیلت را بررسی کن.';return}
+   user=r.data.user;ui();await sync(true);
   }catch(e){status.textContent='خطا: '+(e.message||'اتصال برقرار نشد')}
  }
  $('#fc-in').onclick=()=>auth('in');$('#fc-up').onclick=()=>auth('up');
  $('#fc-keep-local').onclick=async()=>{syncConflict=null;$('#fc-conflict-actions').hidden=true;status.textContent='اطلاعات این دستگاه انتخاب شد؛ در حال ذخیره در فضای ابری...';await sync(false)};
  $('#fc-use-cloud').onclick=()=>{if(!syncConflict)return;const payload=syncConflict.cloud;syncConflict=null;$('#fc-conflict-actions').hidden=true;localStorage.setItem('focus_v1',JSON.stringify(payload));window.dispatchEvent(new CustomEvent('focus:cloud-restore',{detail:payload}));status.textContent='نسخه ابری بازیابی شد ✓'};
- $('#fc-out').onclick=async()=>{await sync(false);const r=await db.auth.signOut();if(r.error){status.textContent='خطا هنگام خروج: '+r.error.message;return}user=null;ui();status.textContent='از حساب خارج شدی.'};
+ $('#fc-out').onclick=async()=>{await sync(false);const r=await db.auth.signOut();if(r.error){status.textContent='خطا هنگام خروج: '+r.error.message;return}user=null;syncConflict=null;$('#fc-conflict-actions').hidden=true;ui();status.textContent='از حساب خارج شدی.'};
  db.auth.getSession().then(async r=>{if(r.error){status.textContent='خطای نشست: '+r.error.message;return}user=r.data.session?.user||null;ui();if(user)await sync(true)});
  const original=localStorage.setItem.bind(localStorage);
  localStorage.setItem=function(k,v){original(k,v);if(k==='focus_v1'&&user&&!syncing){clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(false),350)}};
