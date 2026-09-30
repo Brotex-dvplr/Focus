@@ -22,7 +22,7 @@ function mount(){
     const {data:row,error}=await db.from('user_data').select('payload').eq('user_id',user.id).maybeSingle();if(error)throw error;
     if(row&&row.payload&&typeof row.payload==='object'){
      const local=JSON.parse(localStorage.getItem('focus_v1')||'{}');
-     if(!local||Object.keys(local).length===0){localStorage.setItem('focus_v1',JSON.stringify(row.payload));status.textContent='اطلاعات ابری بازیابی شد ✓';return}
+     if(!local||Object.keys(local).length===0){localStorage.setItem('focus_v1',JSON.stringify(row.payload));window.dispatchEvent(new CustomEvent('focus:cloud-restore',{detail:row.payload}));status.textContent='اطلاعات ابری بازیابی شد ✓';return}
     }
    }
    const payload=JSON.parse(localStorage.getItem('focus_v1')||'{}');
@@ -47,6 +47,6 @@ function mount(){
  const original=localStorage.setItem.bind(localStorage);
  localStorage.setItem=function(k,v){original(k,v);if(k==='focus_v1'&&user&&!syncing){clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(false),350)}};
 }
-function tryMount(){mount();if(!$('#focus-cloud-auth'))setTimeout(tryMount,250)}
+function tryMount(){mount();if(!$('#focus-cloud-auth')&&document.body){const observer=new MutationObserver(()=>{mount();if($('#focus-cloud-auth'))observer.disconnect()});observer.observe(document.body,{childList:true,subtree:true})}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tryMount);else tryMount();
 })();
